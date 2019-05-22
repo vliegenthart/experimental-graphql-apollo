@@ -40,7 +40,7 @@ export default {
         password
       });
 
-      return { token: createToken(user, secret, "30m") };
+      return { token: createToken(user, secret, "1d") };
     },
 
     signIn: async (parent, { login, password }, { models, secret }) => {
@@ -56,7 +56,7 @@ export default {
         throw new AuthenticationError("Invalid password.");
       }
 
-      return { token: createToken(user, secret, "30m") };
+      return { token: createToken(user, secret, "1d") };
     },
 
     deleteUser: combineResolvers(
