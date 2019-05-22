@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import http from "http";
 import cors from "cors";
 import express from "express";
 import jwt from "jsonwebtoken";
@@ -40,14 +41,22 @@ const server = new ApolloServer({
       message
     };
   },
-  context: async ({ req }) => {
-    const me = await getMe(req);
+  context: async ({ req, connection }) => {
+    if (connection) {
+      return {
+        models
+      };
+    }
 
-    return {
-      models,
-      me,
-      secret: process.env.SECRET
-    };
+    if (req) {
+      const me = await getMe(req);
+
+      return {
+        models,
+        me,
+        secret: process.env.SECRET
+      };
+    }
   },
   engine: {
     apiKey: "service:vliegenthart-8202:2Dfk-jXfGENS2O_YN4DVlg"
@@ -56,6 +65,9 @@ const server = new ApolloServer({
 
 server.applyMiddleware({ app, path: "/graphql" });
 
+const httpServer = http.createServer(app);
+server.installSubscriptionHandlers(httpServer);
+
 const eraseDatabaseOnSync = true;
 
 sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
@@ -63,7 +75,7 @@ sequelize.sync({ force: eraseDatabaseOnSync }).then(async () => {
     createUsersWithMessages(new Date());
   }
 
-  app.listen({ port: 8000 }, () => {
+  httpServer.listen({ port: 8000 }, () => {
     console.log("Apollo Server on http://localhost:8000/graphql");
   });
 });
