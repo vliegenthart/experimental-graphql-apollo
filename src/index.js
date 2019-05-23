@@ -96,6 +96,7 @@ sequelize.sync({ force: isTest }).then(async () => {
 
   httpServer.listen({ port }, () => {
     console.log(`Apollo Server on http://localhost:${port}${server.graphqlPath}`);
+    console.log(`Apollo Subscription on ws:localhost:${port}${server.graphqlPath}`);
   });
 });
 
