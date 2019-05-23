@@ -1,10 +1,14 @@
 import "dotenv/config";
 
 import http from "http";
-import cors from "cors";
-import express from "express";
+import koa from "koa";
+import cors from "koa2-cors";
+import bodyParser from 'koa-bodyparser';
+import Router from 'koa-router';
+import koalogger from 'koa-logger';
+import helmet from 'koa-helmet';
+import { ApolloServer, AuthenticationError } from "apollo-server-koa";
 import jwt from "jsonwebtoken";
-import { ApolloServer, AuthenticationError } from "apollo-server-express";
 import DataLoader from "dataloader";
 
 import schema from "./schema";
@@ -12,9 +16,12 @@ import resolvers from "./resolvers";
 import models, { sequelize } from "./models";
 import loaders from "./loaders";
 
-const app = express();
+const app = new koa();
 
 app.use(cors());
+app.use(helmet());
+app.use(koalogger());
+app.use(bodyParser());
 
 const getMe = async req => {
   const token = req.headers["x-token"];
@@ -45,7 +52,8 @@ const server = new ApolloServer({
       message
     };
   },
-  context: async ({ req, connection }) => {
+  bodyParser: true,
+  context: async ({ ctx, connection }) => {
     if (connection) {
       return {
         models,
@@ -55,8 +63,8 @@ const server = new ApolloServer({
       };
     }
 
-    if (req) {
-      const me = await getMe(req);
+    if (ctx) {
+      const me = await getMe(ctx.request);
 
       return {
         models,
@@ -73,9 +81,8 @@ const server = new ApolloServer({
   }
 });
 
-server.applyMiddleware({ app, path: "/graphql" });
-
-const httpServer = http.createServer(app);
+server.applyMiddleware({ app });
+const httpServer = http.createServer(app.callback());
 server.installSubscriptionHandlers(httpServer);
 
 const isTest = !!process.env.TEST_DATABASE;
@@ -88,7 +95,7 @@ sequelize.sync({ force: isTest }).then(async () => {
   }
 
   httpServer.listen({ port }, () => {
-    console.log(`Apollo Server on http://localhost:${port}/graphql`);
+    console.log(`Apollo Server on http://localhost:${port}${server.graphqlPath}`);
   });
 });
 

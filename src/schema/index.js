@@ -1,4 +1,4 @@
-import { gql } from "apollo-server-express";
+import { gql } from "apollo-server-koa";
 
 import userSchema from "./user";
 import messageSchema from "./message";
